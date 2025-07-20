@@ -170,7 +170,9 @@ public class PEOutMessagePacket implements PacketListener {
                                     "LONGER THAN MAX LENGTH: " + longerThanMaxLength +
                                     "CURRENT MESSAGE: " + net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText().serialize(chatMessage.getMessage()));
 
-                            chatMessage.setMessage((net.kyori.adventure.text.Component) type.convertTo(component, legacyRGB));
+                            if (sender != null) {
+                                chatMessage.setMessage((net.kyori.adventure.text.Component) type.convertTo(component, legacyRGB));
+                            }
 
                             sendDebug("Processed SYSTEM_CHAT_MESSAGE Packet:" +
                                     "NEW COMPONENT: " + PlainTextComponentSerializer.plainText().serialize(component));
@@ -311,7 +313,7 @@ public class PEOutMessagePacket implements PacketListener {
 
     @Override
     public void onPacketSend(PacketSendEvent event) {
-        System.out.println(event.getPacketType());
+        //System.out.println(event.getPacketType());
 
         if (!PACKET_HANDLERS.containsKey(event.getPacketType())) return;
 
@@ -329,13 +331,11 @@ public class PEOutMessagePacket implements PacketListener {
 
             Player receiver = event.getPlayer();
 
-            if (!(event.getLastUsedWrapper() instanceof WrapperPlayServerSystemChatMessage)) {
-                event.setCancelled(true);
-            }
+             event.setCancelled(true);
 
             event.markForReEncode(true);
             UUID messageUUID = UUID.randomUUID();
-            ICPlayer determinedSender = ICPlayerFactory.getICPlayer((Player) event.getPlayer());
+            ICPlayer determinedSender = packetHandler.getDeterminedSenderFunction().apply(event);
 
             PacketSendEvent originalEvent = event.clone();
             SCHEDULING_SERVICE.execute(() -> {
